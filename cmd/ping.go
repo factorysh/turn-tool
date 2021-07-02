@@ -16,21 +16,23 @@ import (
 )
 
 //var TCP bool
-var Host string
-var Port int
-var Realm string
-var Id string
-var Secret string
+var (
+	host   string
+	port   int
+	realm  string
+	id     string
+	secret string
+)
 
 func init() {
-	//pingCmd.LocalFlags().BoolVar(&TCP, "tcp", false, "use TURN with tcp")
-	pingCmd.LocalFlags().StringVar(&Host, "host", "", "Host")
-	pingCmd.MarkFlagRequired("host")
-	pingCmd.LocalFlags().IntVar(&Port, "port", 3478, "Port")
-	pingCmd.LocalFlags().StringVar(&Realm, "realm", "pion.ly", "Realm")
-	pingCmd.LocalFlags().StringVar(&Id, "id", "bob", "Coturn REST id")
-	pingCmd.LocalFlags().StringVar(&Secret, "secret", "", "Coturn REST secret")
 	rootCmd.AddCommand(pingCmd)
+	//pingCmd.LocalFlags().BoolVar(&TCP, "tcp", false, "use TURN with tcp")
+	pingCmd.PersistentFlags().StringVarP(&host, "host", "H", "", "Host")
+	pingCmd.MarkFlagRequired("host")
+	pingCmd.PersistentFlags().IntVarP(&port, "port", "p", 3478, "Port")
+	pingCmd.PersistentFlags().StringVarP(&realm, "realm", "r", "pion.ly", "Realm")
+	pingCmd.PersistentFlags().StringVarP(&id, "id", "i", "bob", "Coturn REST id")
+	pingCmd.PersistentFlags().StringVarP(&secret, "secret", "s", "", "Coturn REST secret")
 }
 
 var pingCmd = &cobra.Command{
@@ -38,10 +40,10 @@ var pingCmd = &cobra.Command{
 	Short: "Ping a TURN server",
 	Long:  ``,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(Host) == 0 {
+		if len(host) == 0 {
 			fmt.Println(args)
 			if len(args) >= 1 {
-				Host = args[0]
+				host = args[0]
 			} else {
 				return errors.New("host is mandatory")
 			}
@@ -54,8 +56,8 @@ var pingCmd = &cobra.Command{
 		}
 		defer conn.Close()
 
-		turnServerAddr := fmt.Sprintf("%s:%d", Host, Port)
-		username, password, err := BuildRestPasswor(Id, []byte(Secret), 10*time.Minute)
+		turnServerAddr := fmt.Sprintf("%s:%d", host, port)
+		username, password, err := BuildRestPasswor(id, []byte(secret), 10*time.Minute)
 		if err != nil {
 			return err
 		}
@@ -66,7 +68,7 @@ var pingCmd = &cobra.Command{
 			Conn:           conn,
 			Username:       username,
 			Password:       password,
-			Realm:          Realm,
+			Realm:          realm,
 			LoggerFactory:  logging.NewDefaultLoggerFactory(),
 		}
 

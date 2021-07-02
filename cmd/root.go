@@ -9,7 +9,7 @@ import (
 
 var rootCmd = &cobra.Command{
 	Use:   "turn",
-	Short: "",
+	Short: "TURN tool",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Do Stuff Here
