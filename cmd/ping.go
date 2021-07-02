@@ -56,7 +56,7 @@ var pingCmd = &cobra.Command{
 		defer conn.Close()
 
 		turnServerAddr := fmt.Sprintf("%s:%d", host, port)
-		username, password, err := BuildRestPasswor(id, []byte(secret), 10*time.Minute)
+		username, password, err := BuildRestPasswor(id, []byte(secret), 1*time.Hour)
 		if err != nil {
 			return err
 		}
