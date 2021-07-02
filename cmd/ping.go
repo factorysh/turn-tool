@@ -71,9 +71,14 @@ var pingCmd = &cobra.Command{
 			LoggerFactory:  logging.NewDefaultLoggerFactory(),
 		}
 
-		fmt.Printf(`username %s
-password %s
-address %s
+		fmt.Printf(`
+{
+	"username" : "%s",
+	"password" : "%s",
+	"uris" : [
+	  "turn:%s?transport=udp"
+	]
+}
 `, username, password, turnServerAddr)
 
 		client, err := turn.NewClient(cfg)
