@@ -41,7 +41,6 @@ var pingCmd = &cobra.Command{
 	Long:  ``,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(host) == 0 {
-			fmt.Println(args)
 			if len(args) >= 1 {
 				host = args[0]
 			} else {
@@ -71,6 +70,11 @@ var pingCmd = &cobra.Command{
 			Realm:          realm,
 			LoggerFactory:  logging.NewDefaultLoggerFactory(),
 		}
+
+		fmt.Printf(`username %s
+password %s
+address %s
+`, username, password, turnServerAddr)
 
 		client, err := turn.NewClient(cfg)
 		if err != nil {
