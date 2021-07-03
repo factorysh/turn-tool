@@ -65,6 +65,7 @@ func pingUDP(turnServerAddr string, username string, password string) error {
 		return err
 	}
 	defer conn.Close()
+	fmt.Println("conn", conn.LocalAddr().String())
 
 	cfg := &turn.ClientConfig{
 		STUNServerAddr: turnServerAddr,
@@ -75,6 +76,8 @@ func pingUDP(turnServerAddr string, username string, password string) error {
 		Realm:          realm,
 		LoggerFactory:  logging.NewDefaultLoggerFactory(),
 	}
+
+	fmt.Println("Realm", realm)
 
 	fmt.Printf(`
 {
@@ -104,6 +107,7 @@ func pingUDP(turnServerAddr string, username string, password string) error {
 		return err
 	}
 	defer relayConn.Close()
+	fmt.Println("relayConn", relayConn.LocalAddr().String())
 
 	// Set up pinger socket (pingerConn)
 	pingerConn, err := net.ListenPacket("udp4", "0.0.0.0:0")
@@ -111,6 +115,7 @@ func pingUDP(turnServerAddr string, username string, password string) error {
 		return err
 	}
 	defer pingerConn.Close()
+	fmt.Println("pingerConn", pingerConn.LocalAddr().String())
 
 	// Start read-loop on pingerConn
 	go func() {
@@ -118,11 +123,15 @@ func pingUDP(turnServerAddr string, username string, password string) error {
 		for {
 			n, from, pingerErr := pingerConn.ReadFrom(buf)
 			if pingerErr != nil {
+				fmt.Println("pingError", pingerErr)
 				break
 			}
 
 			msg := string(buf[:n])
-			if sentAt, pingerErr := time.Parse(time.RFC3339Nano, msg); pingerErr == nil {
+			sentAt, pingerErr := time.Parse(time.RFC3339Nano, msg)
+			if pingerErr != nil {
+				fmt.Println("pingError", pingerErr)
+			} else {
 				rtt := time.Since(sentAt)
 				log.Printf("%d bytes from from %s time=%d ms\n", n, from.String(), int(rtt.Seconds()*1000))
 			}
@@ -135,11 +144,13 @@ func pingUDP(turnServerAddr string, username string, password string) error {
 		for {
 			n, from, readerErr := relayConn.ReadFrom(buf)
 			if readerErr != nil {
+				fmt.Println("readerErr", readerErr)
 				break
 			}
 
 			// Echo back
 			if _, readerErr = relayConn.WriteTo(buf[:n], from); readerErr != nil {
+				fmt.Println("readerErr", readerErr)
 				break
 			}
 		}
