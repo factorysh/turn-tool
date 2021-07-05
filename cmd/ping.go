@@ -22,6 +22,7 @@ var (
 	realm  string
 	id     string
 	secret string
+	peer   string
 )
 
 func init() {
@@ -33,6 +34,7 @@ func init() {
 	pingCmd.PersistentFlags().StringVarP(&realm, "realm", "r", "pion.ly", "Realm")
 	pingCmd.PersistentFlags().StringVarP(&id, "id", "i", "bob", "Coturn REST id")
 	pingCmd.PersistentFlags().StringVarP(&secret, "secret", "s", "", "Coturn REST secret")
+	pingCmd.PersistentFlags().StringVarP(&peer, "peer", "e", "0.0.0.0", "Peer address")
 }
 
 var pingCmd = &cobra.Command{
@@ -60,7 +62,7 @@ var pingCmd = &cobra.Command{
 func pingUDP(turnServerAddr string, username string, password string) error {
 
 	// TURN client won't create a local listening socket by itself.
-	conn, err := net.ListenPacket("udp4", "0.0.0.0:0")
+	conn, err := net.ListenPacket("udp4", fmt.Sprintf("%s:0", peer))
 	if err != nil {
 		return err
 	}
@@ -110,7 +112,7 @@ func pingUDP(turnServerAddr string, username string, password string) error {
 	fmt.Println("relayConn", relayConn.LocalAddr().String())
 
 	// Set up pinger socket (pingerConn)
-	pingerConn, err := net.ListenPacket("udp4", "0.0.0.0:0")
+	pingerConn, err := net.ListenPacket("udp4", fmt.Sprintf("%s:0", peer))
 	if err != nil {
 		return err
 	}
