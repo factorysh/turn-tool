@@ -132,7 +132,7 @@ func pingUDP(turnServerAddr string, username string, password string) error {
 			msg := string(buf[:n])
 			sentAt, pingerErr := time.Parse(time.RFC3339Nano, msg)
 			if pingerErr != nil {
-				fmt.Println("pingError", pingerErr)
+				fmt.Println("parse error", pingerErr)
 			} else {
 				rtt := time.Since(sentAt)
 				log.Printf("%d bytes from from %s time=%d ms\n", n, from.String(), int(rtt.Seconds()*1000))
@@ -152,7 +152,7 @@ func pingUDP(turnServerAddr string, username string, password string) error {
 
 			// Echo back
 			if _, readerErr = relayConn.WriteTo(buf[:n], from); readerErr != nil {
-				fmt.Println("readerErr", readerErr)
+				fmt.Println("readerErr echo back", readerErr)
 				break
 			}
 		}
