@@ -101,11 +101,19 @@ func pingUDP(turnServerAddr string, username string, password string) error {
 		return err
 	}
 	defer client.Close()
+
 	// Start listening on the conn provided.
 	err = client.Listen()
 	if err != nil {
 		return err
 	}
+
+	mappedAddr, err := client.SendBindingRequest()
+	if err != nil {
+		return err
+	}
+	fmt.Println("mappedAddr", mappedAddr)
+
 	// Allocate a relay socket on the TURN server. On success, it
 	// will return a net.PacketConn which represents the remote
 	// socket.
@@ -124,6 +132,15 @@ func pingUDP(turnServerAddr string, username string, password string) error {
 	defer pingerConn.Close()
 	fmt.Println("pingerConn", pingerConn.LocalAddr().String())
 
+	// Punch a UDP hole for the relayConn by sending a data to the mappedAddr.
+	// This will trigger a TURN client to generate a permission request to the
+	// TURN server. After this, packets from the IP address will be accepted by
+	// the TURN server.
+	_, err = relayConn.WriteTo([]byte("Hello"), mappedAddr)
+	if err != nil {
+		return err
+	}
+
 	// Start read-loop on pingerConn
 	go func() {
 		buf := make([]byte, 1600)
@@ -131,7 +148,8 @@ func pingUDP(turnServerAddr string, username string, password string) error {
 			n, from, pingerErr := pingerConn.ReadFrom(buf)
 			if pingerErr != nil {
 				fmt.Println("pingError", pingerErr)
-				break
+				//break
+				continue
 			}
 
 			msg := string(buf[:n])
@@ -152,7 +170,8 @@ func pingUDP(turnServerAddr string, username string, password string) error {
 			n, from, readerErr := relayConn.ReadFrom(buf)
 			if readerErr != nil {
 				fmt.Println("readerErr", readerErr)
-				break
+				//break
+				continue
 			}
 
 			// Echo back
@@ -163,7 +182,7 @@ func pingUDP(turnServerAddr string, username string, password string) error {
 		}
 	}()
 
-	time.Sleep(500 * time.Millisecond)
+	//time.Sleep(500 * time.Millisecond)
 
 	// Send 10 packets from relayConn to the echo server
 	for i := 0; i < 10; i++ {
