@@ -142,10 +142,11 @@ func pingUDP(turnServerAddr string, username string, password string) error {
 		return err
 	}
 
+	looping := true
 	// Start read-loop on pingerConn
 	go func() {
 		buf := make([]byte, 1600)
-		for {
+		for looping {
 			n, from, pingerErr := pingerConn.ReadFrom(buf)
 			if pingerErr != nil {
 				fmt.Println("pingError", pingerErr)
@@ -167,7 +168,7 @@ func pingUDP(turnServerAddr string, username string, password string) error {
 	// Start read-loop on relayConn
 	go func() {
 		buf := make([]byte, 1600)
-		for {
+		for looping {
 			n, from, readerErr := relayConn.ReadFrom(buf)
 			if readerErr != nil {
 				fmt.Println("readerErr", readerErr)
@@ -197,6 +198,7 @@ func pingUDP(turnServerAddr string, username string, password string) error {
 		// Instead, sleep 1 second.
 		time.Sleep(time.Second)
 	}
+	looping = false
 
 	return nil
 }
