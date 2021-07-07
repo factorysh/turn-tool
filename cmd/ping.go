@@ -9,6 +9,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/pion/logging"
@@ -36,7 +37,7 @@ func init() {
 	pingCmd.PersistentFlags().StringVarP(&realm, "realm", "r", "", "Realm")
 	pingCmd.PersistentFlags().StringVarP(&id, "id", "i", os.Getenv("USER"), "Coturn REST id")
 	pingCmd.PersistentFlags().StringVarP(&secret, "secret", "s", "", "Coturn REST secret")
-	pingCmd.PersistentFlags().StringVarP(&peer, "peer", "e", "0.0.0.0", "Peer address")
+	pingCmd.PersistentFlags().StringVarP(&peer, "peer", "e", "0.0.0.0", "Peer iface or address")
 	pingCmd.PersistentFlags().IntVarP(&npings, "number", "n", 10, "Number of ping")
 }
 
@@ -55,6 +56,25 @@ var pingCmd = &cobra.Command{
 
 		if realm == "" {
 			realm = host
+		}
+
+		ip := net.ParseIP(peer)
+		if ip == nil {
+			iface, err := net.InterfaceByName(peer)
+			if err != nil {
+				return err
+			}
+			addrs, err := iface.Addrs()
+			if err != nil {
+				return err
+			}
+			if len(addrs) > 1 {
+				return fmt.Errorf("iface %s has more than one address %v", peer, addrs)
+			}
+			if len(addrs) == 0 {
+				return fmt.Errorf("iface %s has noaddress", peer)
+			}
+			peer = strings.Split(addrs[0].String(), "/")[0]
 		}
 
 		turnServerAddr := fmt.Sprintf("%s:%d", host, port)
