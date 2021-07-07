@@ -13,5 +13,5 @@ turnserver -c demo/turnserver.conf
 Ping
 
 ```bash
-./bin/turn ping --secret north localhost
+./bin/turn ping --secret north some_local_ip
 ```
