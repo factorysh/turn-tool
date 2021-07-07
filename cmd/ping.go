@@ -24,6 +24,7 @@ var (
 	id     string
 	secret string
 	peer   string
+	npings int
 )
 
 func init() {
@@ -36,6 +37,7 @@ func init() {
 	pingCmd.PersistentFlags().StringVarP(&id, "id", "i", os.Getenv("USER"), "Coturn REST id")
 	pingCmd.PersistentFlags().StringVarP(&secret, "secret", "s", "", "Coturn REST secret")
 	pingCmd.PersistentFlags().StringVarP(&peer, "peer", "e", "0.0.0.0", "Peer address")
+	pingCmd.PersistentFlags().IntVarP(&npings, "number", "n", 10, "Number of ping")
 }
 
 var pingCmd = &cobra.Command{
@@ -184,10 +186,8 @@ func pingUDP(turnServerAddr string, username string, password string) error {
 		}
 	}()
 
-	//time.Sleep(500 * time.Millisecond)
-
 	// Send 10 packets from relayConn to the echo server
-	for i := 0; i < 10; i++ {
+	for i := 0; i < npings; i++ {
 		msg := time.Now().Format(time.RFC3339Nano)
 		_, err = pingerConn.WriteTo([]byte(msg), relayConn.LocalAddr())
 		if err != nil {
