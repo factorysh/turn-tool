@@ -152,7 +152,9 @@ func pingUDP(turnServerAddr string, username string, password string) error {
 			n, from, pingerErr := pingerConn.ReadFrom(buf)
 			if pingerErr != nil {
 				fmt.Println("pingError", pingerErr)
-				//break
+				if !looping {
+					return
+				}
 				continue
 			}
 
@@ -173,8 +175,10 @@ func pingUDP(turnServerAddr string, username string, password string) error {
 		for looping {
 			n, from, readerErr := relayConn.ReadFrom(buf)
 			if readerErr != nil {
+				if !looping {
+					return
+				}
 				fmt.Println("readerErr", readerErr)
-				//break
 				continue
 			}
 
