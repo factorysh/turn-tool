@@ -80,6 +80,7 @@ func pingUDP(turnServerAddr string, username string, password string) error {
 		Username:       username,
 		Password:       password,
 		Realm:          realm,
+		Software:       "TurnTool",
 		LoggerFactory:  logging.NewDefaultLoggerFactory(),
 	}
 
