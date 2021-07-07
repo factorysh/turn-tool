@@ -31,7 +31,7 @@ func init() {
 	pingCmd.PersistentFlags().StringVarP(&host, "host", "H", "", "Host")
 	pingCmd.MarkFlagRequired("host")
 	pingCmd.PersistentFlags().IntVarP(&port, "port", "p", 3478, "Port")
-	pingCmd.PersistentFlags().StringVarP(&realm, "realm", "r", "pion.ly", "Realm")
+	pingCmd.PersistentFlags().StringVarP(&realm, "realm", "r", "", "Realm")
 	pingCmd.PersistentFlags().StringVarP(&id, "id", "i", "bob", "Coturn REST id")
 	pingCmd.PersistentFlags().StringVarP(&secret, "secret", "s", "", "Coturn REST secret")
 	pingCmd.PersistentFlags().StringVarP(&peer, "peer", "e", "0.0.0.0", "Peer address")
@@ -48,6 +48,10 @@ var pingCmd = &cobra.Command{
 			} else {
 				return errors.New("host is mandatory")
 			}
+		}
+
+		if realm == "" {
+			realm = host
 		}
 
 		turnServerAddr := fmt.Sprintf("%s:%d", host, port)
