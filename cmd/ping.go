@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"time"
 
 	"github.com/pion/logging"
@@ -32,7 +33,7 @@ func init() {
 	pingCmd.MarkFlagRequired("host")
 	pingCmd.PersistentFlags().IntVarP(&port, "port", "p", 3478, "Port")
 	pingCmd.PersistentFlags().StringVarP(&realm, "realm", "r", "", "Realm")
-	pingCmd.PersistentFlags().StringVarP(&id, "id", "i", "bob", "Coturn REST id")
+	pingCmd.PersistentFlags().StringVarP(&id, "id", "i", os.Getenv("USER"), "Coturn REST id")
 	pingCmd.PersistentFlags().StringVarP(&secret, "secret", "s", "", "Coturn REST secret")
 	pingCmd.PersistentFlags().StringVarP(&peer, "peer", "e", "0.0.0.0", "Peer address")
 }
