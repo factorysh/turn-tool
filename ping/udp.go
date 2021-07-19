@@ -12,6 +12,10 @@ import (
 
 func PingUDP(peer string, realm string, turnServerAddr string, username string, password string, npings int) error {
 
+	pinger := NewPinger(peer)
+	defer pinger.Close()
+	go pinger.Start()
+
 	// TURN client won't create a local listening socket by itself.
 	conn, err := net.ListenPacket("udp4", fmt.Sprintf("%s:0", peer))
 	if err != nil {
@@ -71,14 +75,6 @@ func PingUDP(peer string, realm string, turnServerAddr string, username string, 
 	defer relayConn.Close()
 	fmt.Println("relayConn", relayConn.LocalAddr().String())
 
-	// Set up pinger socket (pingerConn)
-	pingerConn, err := net.ListenPacket("udp4", fmt.Sprintf("%s:0", peer))
-	if err != nil {
-		return err
-	}
-	defer pingerConn.Close()
-	fmt.Println("pingerConn", pingerConn.LocalAddr().String())
-
 	// Punch a UDP hole for the relayConn by sending a data to the mappedAddr.
 	// This will trigger a TURN client to generate a permission request to the
 	// TURN server. After this, packets from the IP address will be accepted by
@@ -89,30 +85,6 @@ func PingUDP(peer string, realm string, turnServerAddr string, username string, 
 	}
 
 	looping := true
-	// Start read-loop on pingerConn
-	go func() {
-		buf := make([]byte, 1600)
-		for looping {
-			n, from, pingerErr := pingerConn.ReadFrom(buf)
-			if pingerErr != nil {
-				fmt.Println("pingError", pingerErr)
-				if !looping {
-					return
-				}
-				continue
-			}
-
-			msg := string(buf[:n])
-			sentAt, pingerErr := time.Parse(time.RFC3339Nano, msg)
-			if pingerErr != nil {
-				fmt.Println("parse error", pingerErr)
-			} else {
-				rtt := time.Since(sentAt)
-				log.Printf("%d bytes from from %s time=%d ms\n", n, from.String(), int(rtt.Seconds()*1000))
-			}
-		}
-	}()
-
 	// Start read-loop on relayConn
 	go func() {
 		buf := make([]byte, 1600)
@@ -134,10 +106,17 @@ func PingUDP(peer string, realm string, turnServerAddr string, username string, 
 		}
 	}()
 
+	go func() {
+		for {
+			p := <-pinger.Ping()
+			log.Printf("%d bytes from from %s time=%d ms\n", p.Size, p.Source.String(), int(p.RTT.Seconds()*1000))
+		}
+	}()
+
 	// Send 10 packets from relayConn to the echo server
 	for i := 0; i < npings; i++ {
 		msg := time.Now().Format(time.RFC3339Nano)
-		_, err = pingerConn.WriteTo([]byte(msg), relayConn.LocalAddr())
+		_, err = pinger.WriteTo([]byte(msg), relayConn.LocalAddr())
 		if err != nil {
 			return err
 		}
