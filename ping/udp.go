@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/pion/logging"
@@ -84,6 +85,8 @@ func PingUDP(peer string, realm string, turnServerAddr string, username string, 
 		return err
 	}
 
+	wait := &sync.WaitGroup{}
+	wait.Add(npings * 2)
 	looping := true
 	// Start read-loop on relayConn
 	go func() {
@@ -103,6 +106,7 @@ func PingUDP(peer string, realm string, turnServerAddr string, username string, 
 				fmt.Println("readerErr echo back", readerErr)
 				break
 			}
+			wait.Done()
 		}
 	}()
 
@@ -110,21 +114,25 @@ func PingUDP(peer string, realm string, turnServerAddr string, username string, 
 		for {
 			p := <-pinger.Ping()
 			log.Printf("%d bytes from from %s time=%d ms\n", p.Size, p.Source.String(), int(p.RTT.Seconds()*1000))
+			wait.Done()
 		}
 	}()
 
-	// Send 10 packets from relayConn to the echo server
-	for i := 0; i < npings; i++ {
-		msg := time.Now().Format(time.RFC3339Nano)
-		_, err = pinger.WriteTo([]byte(msg), relayConn.LocalAddr())
-		if err != nil {
-			return err
+	// Send n packets from relayConn to the echo server
+	go func() {
+		for i := 0; i < npings; i++ {
+			msg := time.Now().Format(time.RFC3339Nano)
+			_, err = pinger.WriteTo([]byte(msg), relayConn.LocalAddr())
+			if err != nil {
+				fmt.Printf("PingError %s", err)
+				return
+			}
+			// For simplicity, this example does not wait for the pong (reply).
+			// Instead, sleep 1 second.
+			time.Sleep(time.Second)
 		}
-
-		// For simplicity, this example does not wait for the pong (reply).
-		// Instead, sleep 1 second.
-		time.Sleep(time.Second)
-	}
+	}()
+	wait.Wait()
 	looping = false
 
 	return nil
