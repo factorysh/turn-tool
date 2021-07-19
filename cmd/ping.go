@@ -142,7 +142,7 @@ func pingUDP(turnServerAddr string, username string, password string) error {
 	// socket.
 	relayConn, err := client.Allocate()
 	if err != nil {
-		return err
+		return fmt.Errorf("turn allocate error : %s", err.Error())
 	}
 	defer relayConn.Close()
 	fmt.Println("relayConn", relayConn.LocalAddr().String())
