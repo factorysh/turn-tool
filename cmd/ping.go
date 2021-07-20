@@ -7,12 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"net/url"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/factorysh/turn-tool/parse"
 	"github.com/factorysh/turn-tool/ping"
 	"github.com/spf13/cobra"
 )
@@ -66,10 +66,10 @@ var pingCmd = &cobra.Command{
 		}
 
 		for _, urlRaw := range args {
-			if !strings.Contains(urlRaw, "://") {
-				urlRaw = "turn://" + urlRaw
+			if !strings.Contains(urlRaw, ":") {
+				urlRaw = "turn:" + urlRaw
 			}
-			u, err := url.Parse(urlRaw)
+			u, err := parse.Parse(urlRaw)
 			if err != nil {
 				return err
 			}
@@ -78,10 +78,10 @@ var pingCmd = &cobra.Command{
 				realm = host
 			}
 			var port int
-			if u.Port() == "" {
+			if u.Port == "" {
 				port = 3478
 			} else {
-				port64, err := strconv.ParseInt(u.Port(), 10, 32)
+				port64, err := strconv.ParseInt(u.Port, 10, 32)
 				if err != nil {
 					return err
 				}
