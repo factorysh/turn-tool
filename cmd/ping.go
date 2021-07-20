@@ -7,7 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -17,8 +19,6 @@ import (
 
 //var TCP bool
 var (
-	host   string
-	port   int
 	realm  string
 	id     string
 	secret string
@@ -29,14 +29,12 @@ var (
 func init() {
 	rootCmd.AddCommand(pingCmd)
 	//pingCmd.LocalFlags().BoolVar(&TCP, "tcp", false, "use TURN with tcp")
-	pingCmd.PersistentFlags().StringVarP(&host, "host", "H", "", "Host")
 	pingCmd.MarkFlagRequired("host")
-	pingCmd.PersistentFlags().IntVarP(&port, "port", "p", 3478, "Port")
 	pingCmd.PersistentFlags().StringVarP(&realm, "realm", "r", "", "Realm")
 	pingCmd.PersistentFlags().StringVarP(&id, "id", "i", os.Getenv("USER"), "Coturn REST id")
 	pingCmd.PersistentFlags().StringVarP(&secret, "secret", "s", "", "Coturn REST secret")
 	pingCmd.PersistentFlags().StringVarP(&peer, "peer", "e", "0.0.0.0", "Peer iface or address")
-	pingCmd.PersistentFlags().IntVarP(&npings, "number", "n", 10, "Number of ping")
+	pingCmd.PersistentFlags().IntVarP(&npings, "number", "n", 5, "Number of ping")
 }
 
 var pingCmd = &cobra.Command{
@@ -44,16 +42,8 @@ var pingCmd = &cobra.Command{
 	Short: "Ping a TURN server",
 	Long:  ``,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(host) == 0 {
-			if len(args) >= 1 {
-				host = args[0]
-			} else {
-				return errors.New("host is mandatory")
-			}
-		}
-
-		if realm == "" {
-			realm = host
+		if len(args) == 0 {
+			return errors.New("host is mandatory")
 		}
 
 		ip := net.ParseIP(peer)
@@ -75,12 +65,44 @@ var pingCmd = &cobra.Command{
 			peer = strings.Split(addrs[0].String(), "/")[0]
 		}
 
-		turnServerAddr := fmt.Sprintf("%s:%d", host, port)
-		username, password, err := buildRestPasswor(id, []byte(secret), 1*time.Hour)
-		if err != nil {
-			return err
+		for _, urlRaw := range args {
+			if !strings.Contains(urlRaw, "://") {
+				urlRaw = "turn://" + urlRaw
+			}
+			u, err := url.Parse(urlRaw)
+			if err != nil {
+				return err
+			}
+			host := u.Host
+			if realm == "" {
+				realm = host
+			}
+			var port int
+			if u.Port() == "" {
+				port = 3478
+			} else {
+				port64, err := strconv.ParseInt(u.Port(), 10, 32)
+				if err != nil {
+					return err
+				}
+				port = int(port64)
+			}
+			switch u.Scheme {
+			case "turn":
+				turnServerAddr := fmt.Sprintf("%s:%d", host, port)
+				username, password, err := buildRestPasswor(id, []byte(secret), 1*time.Hour)
+				if err != nil {
+					return err
+				}
+				err = ping.PingUDP(peer, realm, turnServerAddr, username, password, npings)
+				if err != nil {
+					return err
+				}
+			default:
+				return fmt.Errorf("wrong scheme : %s", u.Scheme)
+			}
 		}
-		return ping.PingUDP(peer, realm, turnServerAddr, username, password, npings)
+		return nil
 	},
 }
 
