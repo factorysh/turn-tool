@@ -87,14 +87,20 @@ var pingCmd = &cobra.Command{
 				}
 				port = int(port64)
 			}
+			addr := fmt.Sprintf("%s:%d", host, port)
+			fmt.Printf("\n#%s\n\n", u.Scheme)
 			switch u.Scheme {
 			case "turn":
-				turnServerAddr := fmt.Sprintf("%s:%d", host, port)
 				username, password, err := buildRestPasswor(id, []byte(secret), 1*time.Hour)
 				if err != nil {
 					return err
 				}
-				err = ping.PingUDP(peer, realm, turnServerAddr, username, password, npings)
+				err = ping.PingUDP(peer, realm, addr, username, password, npings)
+				if err != nil {
+					return err
+				}
+			case "stun":
+				err = ping.Stun(addr)
 				if err != nil {
 					return err
 				}
