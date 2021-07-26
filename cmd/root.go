@@ -12,7 +12,7 @@ var rootCmd = &cobra.Command{
 	Short: "TURN tool",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		// Do Stuff Here
+		cmd.Help()
 	},
 }
 
