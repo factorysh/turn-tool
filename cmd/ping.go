@@ -95,16 +95,24 @@ var pingCmd = &cobra.Command{
 				if err != nil {
 					return err
 				}
-				err = ping.PingUDP(peer, realm, addr, "", "", 1)
-				if err == nil {
-					return errors.New("server Authentifcation is mandatory")
-				}
-				if err.Error() != "turn allocate error : Allocate error response (error 401: Unauthorized)" {
-					return err
-				}
-				err = ping.PingUDP(peer, realm, addr, username, password, npings)
-				if err != nil {
-					return err
+				if u.Transport == "udp" {
+
+					err = ping.PingUDP(peer, realm, addr, "", "", 1)
+					if err == nil {
+						return errors.New("server Authentifcation is mandatory")
+					}
+					if err.Error() != "turn allocate error : Allocate error response (error 401: Unauthorized)" {
+						return err
+					}
+					err = ping.PingUDP(peer, realm, addr, username, password, npings)
+					if err != nil {
+						return err
+					}
+				} else {
+					err = ping.PingTCP(peer, realm, addr, username, password, npings)
+					if err != nil {
+						return err
+					}
 				}
 			case "stun":
 				err = ping.Stun(addr)
